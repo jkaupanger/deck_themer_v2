@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-from . import helpers
+from sample.helpers import *
 
-def get_hmm():
-    """Get a thought."""
-    return 'hmmm...'
+aminatou_corpus = corpus_maker('C:\\Users\\Jamesson\\Documents\\GitHub\\deck_themer_v2\\CSV_files\\aminatou_tdm.csv')
 
+lda = create_lda(k=9, corpus=aminatou_corpus)
 
-def hmm():
-    """Contemplation..."""
-    if helpers.get_answer():
-        print(get_hmm())
+hdp = create_hdp(initial_k=9,corpus=aminatou_corpus)
+
+print('Done')
+
