@@ -1,10 +1,13 @@
-Sample Module Repository
-========================
+# Deck_themer_v2
 
-This simple project is an example repo for Python projects.
+Deck_themer_v2 is a python...something-or-other that attempts to automatically extract deck archetypes from EDH/Commander decklists
 
-`Learn more <http://www.kennethreitz.org/essays/repository-structure-and-python>`_.
 
----------------
 
-If you want to learn more about ``setup.py`` files, check out `this repository <https://github.com/kennethreitz/setup.py>`_.
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
