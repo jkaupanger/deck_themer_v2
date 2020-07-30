@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from sample.helpers import *
 
-aminatou_decklists, aminatou_corpus = corpus_maker('')
+aminatou_decklists, aminatou_corpus = corpus_maker('') # Deck files are somewhat proprietary, so this field has been left blank.
 
 #lda = create_lda(k=9, corpus=aminatou_corpus)
 
