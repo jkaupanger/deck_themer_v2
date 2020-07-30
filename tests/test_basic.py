@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
+from sample.helpers import *
 
-from .context import sample
+aminatou_decklists, aminatou_corpus = corpus_maker('')
 
-import unittest
+#lda = create_lda(k=9, corpus=aminatou_corpus)
 
+hdp = create_hdp(min_cf=0,min_df=5,initial_k=9,corpus=aminatou_corpus)
 
-class BasicTestSuite(unittest.TestCase):
-    """Basic test cases."""
+hdp_results = hdp_param_checker(corpus=aminatou_corpus, word_list=aminatou_decklists, card_count=60)
 
-    def test_absolute_truth_and_meaning(self):
-        assert True
-
-
-if __name__ == '__main__':
-    unittest.main()
+print('Done')
