@@ -134,7 +134,7 @@ def create_hdp(tw=tp.TermWeight('IDF'), min_cf=0, min_df=5, rm_top=0, initial_k=
 
 def hdp_param_checker(tw=tp.TermWeight('IDF'), min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
                       min_df_f=1, min_df_s=1, rm_top_0=0, rm_top_f=1, rm_top_s=1, k0_0=2,
-                      k0_f=11, k0_s=1, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
+                      k0_f=12, k0_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
                       eta_s=1, gamma_0=0, gamma_f=1, gamma_s=1, seed=101, corpus=None, burn=100,
                       train=1001, word_list=None, card_count=30):
     """
@@ -226,7 +226,7 @@ def hdp_param_checker(tw=tp.TermWeight('IDF'), min_cf_0=0, min_cf_f=1, min_cf_s=
                                 ll_list = []
                                 hdp = tp.HDPModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, initial_k=k,
                                                   alpha=a, eta=e, gamma=g, seed=seed, corpus=corpus)
-                                for i in range(0, train, 1):
+                                for i in range(0, train, 100):
                                     hdp.burn_in = burn
                                     hdp.train(0)
                                     hdp.train(100)
