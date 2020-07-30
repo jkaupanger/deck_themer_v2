@@ -41,7 +41,7 @@ def corpus_maker(csv_file):
     return decklists, corpus
 
 
-def create_lda(tw=tp.TermWeight('IDF'), min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.1, eta=1, seed=101, corpus=None):
+def create_lda(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.1, eta=1, seed=101, corpus=None):
     """
     Parameters:
         tw: Union[int, TermWeight]
@@ -82,7 +82,7 @@ def create_lda(tw=tp.TermWeight('IDF'), min_cf=0, min_df=5, rm_top=0, k=2, alpha
     return lda
 
 
-def create_hdp(tw=tp.TermWeight('IDF'), min_cf=0, min_df=5, rm_top=0, initial_k=2, alpha=0.1, eta=1,
+def create_hdp(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, initial_k=2, alpha=0.1, eta=1,
                gamma=1, seed=101, corpus=None):
     """
     Parameters:
@@ -132,7 +132,7 @@ def create_hdp(tw=tp.TermWeight('IDF'), min_cf=0, min_df=5, rm_top=0, initial_k=
     return hdp
 
 
-def hdp_param_checker(tw=tp.TermWeight('IDF'), min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
+def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
                       min_df_f=1, min_df_s=1, rm_top_0=0, rm_top_f=1, rm_top_s=1, k0_0=2,
                       k0_f=12, k0_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
                       eta_s=1, gamma_0=0, gamma_f=1, gamma_s=1, seed=101, corpus=None, burn=100,
