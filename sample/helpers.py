@@ -226,9 +226,9 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                                 ll_list = []
                                 hdp = tp.HDPModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, initial_k=k,
                                                   alpha=a, eta=e, gamma=g, seed=seed, corpus=corpus)
+                                hdp.burn_in = burn
+                                hdp.train(0)
                                 for i in range(0, train, 100):
-                                    hdp.burn_in = burn
-                                    hdp.train(0)
                                     hdp.train(100)
                                     ll_list.append(hdp.ll_per_word)
                                 hdp_mean = sum(ll_list) / len(ll_list)
@@ -242,6 +242,32 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                                                 hdp.perplexity, hdp_coh]
                                 results_lists.append(results_list)
     df = pd.DataFrame(data=results_lists[1:], columns=results_lists[0])
+    return df
+
+
+def lda_topic_outputter(lda_model, card_count=30, to_excel=False, fname='lda_output.xlsx'):
+    """
+    Parameters:
+        lda_model: tomotopy.LDAModel()
+            Trained tomotopy LDA model
+        to_excel: boolean
+            Should the resulting DataFrame also be saved as an Excel spreadsheet?
+        fname: str ending in ".xlsx"
+            If to_excel = True, the filename for the resulting Excel spreadsheet
+    :return:
+        topics: DataFrame
+            DataFrame for the given LDA model. DataFrame has three columns:
+            Topic Number - topic number that the LDA model randomly associated with the topic
+            Card Name - name of card that is present in a given topic
+            Weight - how prevalent a given card is in a given topic
+    """
+    topics = []
+    for topic in get_lda_topics(lda_model, top_n=card_count).keys(): # hdp_model.keys():
+        for card in get_lda_topics(lda_model, card_count)[topic]:
+            topics.append([topic, card[0], card[1]])
+    df = pd.DataFrame(data=topics, columns=['Topic Number', 'Card Name', 'Weight'])
+    if to_excel:
+        df.to_excel(fname, encoding="utf-8")
     return df
 
 
@@ -262,7 +288,7 @@ def hdp_topic_outputter(hdp_model, card_count=30, to_excel=False, fname='hdp_out
             Weight - how prevalent a given card is in a given topic
     """
     topics = []
-    for topic in hdp_model.keys():
+    for topic in get_hdp_topics(hdp_model, top_n=card_count).keys(): # hdp_model.keys():
         for card in get_hdp_topics(hdp_model, card_count)[topic]:
             topics.append([topic, card[0], card[1]])
     df = pd.DataFrame(data=topics, columns=['Topic Number', 'Card Name', 'Weight'])
@@ -293,3 +319,188 @@ def hdp_deck_measure(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
     if to_excel:
         df.to_excel(fname, encoding="utf-8")
     return df
+
+
+def get_lda_topics(lda, top_n=30):
+    '''Wrapper function to extract topics from trained tomotopy LDA model (adapted from
+        @ecoronado's get_hdp_topics() method)
+
+    ** Inputs **
+    lda:obj -> LDAModel trained model
+    top_n: int -> top n words in topic based on frequencies
+
+    ** Returns **
+    topics: dict -> per topic, an array with top words and associated frequencies
+    '''
+
+    # Get most important topics by # of times they were assigned (i.e. counts)
+    sorted_topics = [k for k, v in sorted(enumerate(lda.get_count_by_topics()), key=lambda x:x[1], reverse=True)]
+
+    topics=dict()
+
+    # For topics found, extract only those that are still assigned
+    for k in sorted_topics:
+        topic_wp = []
+        for word, prob in lda.get_topic_words(k, top_n=top_n):
+            topic_wp.append((word, prob))
+
+        topics[k] = topic_wp # store topic word/frequency array
+
+    return topics
+
+
+def get_lda_word_topic_dist(lda, to_excel=False, fname='lda_topic_dist.xlsx'):
+    """
+    Parameters:
+        lda: tomotopy.LDAModel() object
+            Trained tomotopy LDA model.
+        to_excel: boolean
+            Should the resulting DataFrame also be saved to an Excel file?
+        fname:
+            If to_excel==True, filename of the resulting Excel spreadsheet.
+    :return:
+        tdist: DataFrame
+            DataFrame with columns equal to the number of LDA topics, rows
+            equal to the size of the LDA's used vocabulary, that gives each
+            card's likelihood of being included in that topic.
+    """
+    df = pd.DataFrame(data=(100*lda.get_topic_word_dist(0)), columns=[0], index=lda.used_vocabs)
+    for topic in range(1, lda.k):
+        df[topic] = 100*lda.get_topic_word_dist(topic)
+    if to_excel:
+        df.to_excel(fname, encoding="utf-8")
+    return df
+
+
+def deck_measurer(decklist, lda):
+    """
+    Parameters:
+        decklist: list of str
+            A single decklist represented as a list of card names (strings).
+        lda: tomotopy.LDAModel object
+            A trained tomotopy LDA model.
+    :return:
+        measured_deck: ndarray
+            An array with length equal to the number of topics that shows how much the deck aligns with each topic.
+    """
+
+    return lda.infer(lda.make_doc(decklist))[0]
+
+
+def id_outlier(lda, decklist, wtopic='max'):
+    """
+    Parameters:
+        lda: tomotopy.LDAModel() object
+            Trained tomotopy LDAModel.
+        decklist: list of str
+            Decklist represented as a list of strings of card names
+        wtopic: int [0,lda.k) or str ('min','max', or 'all')
+            If an integer between 0 and the LDAModel's k value, evaluates for the
+                topic with that index.
+            If 'min', evaluates for the topic that the deck aligns with the least.
+            If 'max', evaluates for the topic that the deck aligns with the most.
+            If 'all', evaluates for all identified topics.
+    :return:
+        str or dictionary
+            If 'all', returns a dictionary where each topic index is a key associated
+                with the card from the deck that's the outlier for that topic.
+            Else, returns a string for the card name for the card in that deck least
+                associated with that topic.
+    """
+    word_topic_dist = get_lda_word_topic_dist(lda)
+    deck_themes = deck_measurer(decklist, lda)
+    if wtopic == 'all':
+        outliers = {}
+        for topic in range(0,lda.k):
+            card_weights = word_topic_dist[topic][word_topic_dist[topic].index.isin(decklist)].sort_values()
+            outliers[topic] = card_weights.index[0]
+        return outliers
+    elif wtopic == 'min':
+        chtopic = list(deck_themes).index(deck_themes.min())
+    elif wtopic == 'max':
+        chtopic = list(deck_themes).index(deck_themes.max())
+    else:
+        chtopic = wtopic
+    card_weights = word_topic_dist[chtopic][word_topic_dist[chtopic].index.isin(decklist)].sort_values()
+    outlier = card_weights.index[0]
+    return outlier
+
+
+def outlier_remover(decklist, card):
+    """
+    Parameters:
+        decklist: list of str
+            A decklist represented by a list of strings of card names.
+        card: str
+            The card to be removed from the decklist
+    :return:
+        list of str
+            Returns the same decklist, minus the card that was removed, as a list of strings
+    """
+    return [x for x in decklist if x != card]
+
+
+def id_missing_common(lda, decklist, wtopic='max'):
+    """
+    Parameters:
+        lda: tomotopy.LDAModel() object
+            Trained tomotopy LDAModel.
+        decklist: list of str
+            Decklist represented as a list of strings of card names
+        wtopic: int [0,lda.k) or str ('min','max', or 'all')
+            If an integer between 0 and the LDAModel's k value, evaluates for the
+                topic with that index.
+            If 'min', evaluates for the topic that the deck aligns with the least.
+            If 'max', evaluates for the topic that the deck aligns with the most.
+            If 'all', evaluates for all identified topics.
+    :return:
+        str or dictionary
+            If 'all', returns a dictionary where each topic index is a key associated
+                with the most popular card from that topic that isn't in the given decklist
+            Else, returns a string for the card name for the most popular card in
+                that topic that's not in the given decklist.
+    """
+    word_topic_dist = get_lda_word_topic_dist(lda)
+    deck_themes = deck_measurer(decklist, lda)
+    if wtopic == 'all':
+        missing = {}
+        for topic in range(0,lda.k):
+            card_index = 0
+            missing_card = 0
+            while missing_card == 0:
+                if word_topic_dist[topic].sort_values(ascending=False).index[card_index] not in decklist:
+                    missing_card = word_topic_dist[topic].sort_values(ascending=False).index[card_index]
+                else:
+                    card_index += 1
+            missing[topic] = missing_card
+        return missing
+    elif wtopic == 'min':
+        chtopic = list(deck_themes).index(deck_themes.min())
+    elif wtopic == 'max':
+        chtopic = list(deck_themes).index(deck_themes.max())
+    else:
+        chtopic = wtopic
+    missing = 0
+    card_index = 0
+    while missing == 0:
+        if word_topic_dist[chtopic].sort_values(ascending=False).index[card_index] not in decklist:
+            missing = word_topic_dist[chtopic].sort_values(ascending=False).index[card_index]
+        else:
+            card_index += 1
+    return missing
+
+
+def missing_adder(decklist,card):
+    """
+    Parameters:
+        decklist: list of str
+            Decklist represented by a list of strings of card names.
+        card: str
+            Card name to be added to the deck.
+    :return:
+        list of str
+            Decklist with added card
+    """
+    new_decklist = decklist.copy()
+    new_decklist.append(card)
+    return new_decklist
