@@ -41,7 +41,7 @@ def corpus_maker(csv_file):
     return decklists, corpus
 
 
-def create_lda(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.1, eta=1, seed=101, corpus=None):
+def create_lda(tw=tp.TermWeight('IDF'), min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.1, eta=1, seed=101, corpus=None):
     """
     Parameters:
         tw: Union[int, TermWeight]
@@ -82,7 +82,7 @@ def create_lda(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.
     return lda
 
 
-def create_hdp(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, initial_k=2, alpha=0.1, eta=1,
+def create_hdp(tw=tp.TermWeight('IDF'), min_cf=0, min_df=5, rm_top=0, initial_k=2, alpha=0.1, eta=1,
                gamma=1, seed=101, corpus=None):
     """
     Parameters:
@@ -132,9 +132,9 @@ def create_hdp(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, initial_k=2, 
     return hdp
 
 
-def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
+def hdp_param_checker(tw=tp.TermWeight('IDF'), min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
                       min_df_f=1, min_df_s=1, rm_top_0=0, rm_top_f=1, rm_top_s=1, k0_0=2,
-                      k0_f=6, k0_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
+                      k0_f=12, k0_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
                       eta_s=1, gamma_0=0, gamma_f=1, gamma_s=1, seed=101, corpus=None, burn=100,
                       train=1001, word_list=None, card_count=30):
     """
@@ -225,7 +225,7 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                             for g in range(gamma_0, gamma_f, gamma_s):
                                 ll_list = []
                                 hdp = tp.HDPModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, initial_k=k,
-                                                  alpha=(10**a), eta=(10**e), gamma=(10**g), seed=seed, corpus=corpus)
+                                                  alpha=a, eta=e, gamma=g, seed=seed, corpus=corpus)
                                 for i in range(0, train, 100):
                                     hdp.burn_in = burn
                                     hdp.train(0)
@@ -237,7 +237,7 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                                 hdp_cv = hdp_std_dev / hdp_mean
                                 hdp_topics = get_hdp_topics(hdp, card_count)
                                 hdp_coh = eval_coherence(hdp_topics, word_list=word_list)
-                                results_list = [str(tw), cf, df, rm, k, (10**a), (10**e), (10**g), hdp.k,
+                                results_list = [str(tw), cf, df, rm, k, a, e, g, hdp.k,
                                                 hdp.live_k, hdp_mean, hdp_std_dev, hdp_cv,
                                                 hdp.perplexity, hdp_coh]
                                 results_lists.append(results_list)
