@@ -7,15 +7,14 @@ from gensim.models import CoherenceModel
 
 def corpus_maker(csv_file):
     """
-
-    Starts with a .csv file and outputs a tomotopy Corpus, a necessary input for both the LDA and the HDP models
+    Starts with a .csv file and outputs a tomotopy Corpus, a necessary input for both the LDA and the HDP models, as
+        well as a list of lists of strings.
     Parameters:
         csv_file: file that holds the decklists. .csv file needs to be in the following format:
             Columns = card names
             Rows = decks
             Cells = number of card (column) included in deck (row), which, other than basic lands and
                 other cards that an EDH can have more than one copy of, will either be a 0 or a 1.
-
     :return:
         decklists: list of lists of strings
             Each deck as a list of card names included (strings)
@@ -43,6 +42,7 @@ def corpus_maker(csv_file):
 
 def create_lda(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.1, eta=1, seed=101, corpus=None):
     """
+    Creates a tomotopy LDAModel()
     Parameters:
         tw: Union[int, TermWeight]
             term weighting scheme in https://bab2min.github.io/tomotopy/v0.8.0/en/#tomotopy.TermWeight ;
@@ -85,6 +85,7 @@ def create_lda(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.
 def create_hdp(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, initial_k=2, alpha=0.1, eta=1,
                gamma=1, seed=101, corpus=None):
     """
+    Creates a tomotopy HDPModel()
     Parameters:
         tw: Union[int, TermWeight]
             term weighting scheme in https://bab2min.github.io/tomotopy/v0.8.0/en/#tomotopy.TermWeight ;
@@ -140,66 +141,66 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
     """
 
     Method to automatically iterate through different HDP parameters to compare results
-
-    tw: Union[int, TermWeight]
-        term weighting scheme in https://bab2min.github.io/tomotopy/v0.8.0/en/#tomotopy.TermWeight ;
-        I chose the default to be inverse document frequency, which means that cards that appear in
-        almost all decks are weighted lower than cards that appear in very few decks.
-    min_cf_0: int
-        Starting minimum card collection frequency
-    min_cf_f: int
-        Ending minimum card collection frequency
-    min_cf_s: int
-        Minmum card collection frequency step size
-    min_df_0: int
-        Starting minimum deck collection frequency
-    min_df_f: int
-        Ending miniumum deck collection frequency
-    min_df_s: int
-        Minimum deck collection frequency step size
-    rm_top_0: int
-        Starting number of top cards to exclude
-    rm_top_f: int
-        Ending number of top cards to exclude
-    rm_top_s: int
-        Top cards to exclude step size
-    k0_0: int
-        Starting number of initial topics
-    k0_f: int
-        Ending number of initial topics
-    k0_s: int
-        Number of initial topics step size
-    alpha_0: int
-        Starting number for the alpha hyperparameter as a power of ten, i.e. alpha = 10^(alpha_0)
-    alpha_f: int
-        Ending number for the alpha hyperparameter as a power of ten, i.e. alpha = 10^(alpha_f)
-    alpha_s: int
-        Step size for the powers of ten of the alpha hyperparameter
-    eta_0: int
-        Starting number for the eta hyperparameter as a power of ten, i.e. eta = 10^(eta_0)
-    eta_f: int
-        Ending number for the eta hyperparameter as a power of ten, i.e. eta = 10^(eta_f)
-    eta_s: int
-        Step size for the powers of ten of the eta hyperparameter
-    gamma_0: int
-        Starting number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_0)
-    gamma_f: int
-        Ending number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_f)
-    gamma_s: int
-        Step size for the powers of ten of the gamma hyperparameter
-    seed: int
-        Random seed. Set to 101 as default in an attempt to duplicate results; however, said
-        duplication has proven to be... elusive.
-    corpus: tomotopy Corpus
-        A list of documents to be added into the model. Method will not function without model.
-    burn: int
-        Number of initial training iterations to discard the results of?
-    train: int
-        Number of iterations to train over
-    word_list: list of lists of strings
-        Collection of decklists with each card name represented as a string.
-    card_count: int
-        Number of cards used to evaluate card coherence.
+    Parameters
+        tw: Union[int, TermWeight]
+            term weighting scheme in https://bab2min.github.io/tomotopy/v0.8.0/en/#tomotopy.TermWeight ;
+            I chose the default to be inverse document frequency, which means that cards that appear in
+            almost all decks are weighted lower than cards that appear in very few decks.
+        min_cf_0: int
+            Starting minimum card collection frequency
+        min_cf_f: int
+            Ending minimum card collection frequency
+        min_cf_s: int
+            Minmum card collection frequency step size
+        min_df_0: int
+            Starting minimum deck collection frequency
+        min_df_f: int
+            Ending miniumum deck collection frequency
+        min_df_s: int
+            Minimum deck collection frequency step size
+        rm_top_0: int
+            Starting number of top cards to exclude
+        rm_top_f: int
+            Ending number of top cards to exclude
+        rm_top_s: int
+            Top cards to exclude step size
+        k0_0: int
+            Starting number of initial topics
+        k0_f: int
+            Ending number of initial topics
+        k0_s: int
+            Number of initial topics step size
+        alpha_0: int
+            Starting number for the alpha hyperparameter as a power of ten, i.e. alpha = 10^(alpha_0)
+        alpha_f: int
+            Ending number for the alpha hyperparameter as a power of ten, i.e. alpha = 10^(alpha_f)
+        alpha_s: int
+            Step size for the powers of ten of the alpha hyperparameter
+        eta_0: int
+            Starting number for the eta hyperparameter as a power of ten, i.e. eta = 10^(eta_0)
+        eta_f: int
+            Ending number for the eta hyperparameter as a power of ten, i.e. eta = 10^(eta_f)
+        eta_s: int
+            Step size for the powers of ten of the eta hyperparameter
+        gamma_0: int
+            Starting number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_0)
+        gamma_f: int
+            Ending number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_f)
+        gamma_s: int
+            Step size for the powers of ten of the gamma hyperparameter
+        seed: int
+            Random seed. Set to 101 as default in an attempt to duplicate results; however, said
+            duplication has proven to be... elusive.
+        corpus: tomotopy Corpus
+            A list of documents to be added into the model. Method will not function without model.
+        burn: int
+            Number of initial training iterations to discard the results of?
+        train: int
+            Number of iterations to train over
+        word_list: list of lists of strings
+            Collection of decklists with each card name represented as a string.
+        card_count: int
+            Number of cards used to evaluate card coherence.
     :return:
         Dataframe that lists the results of the preceding iterations. Contains the following columns:
             k - number of topics (not all of which are live; not sure why this is relevant)
@@ -247,6 +248,8 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
 
 def lda_topic_outputter(lda_model, card_count=30, to_excel=False, fname='lda_output.xlsx'):
     """
+    Given a trained tomotopy LDAModel(), outputs the top n = card_count cards for all topics
+        with the option to also output to Excel spreadsheet.
     Parameters:
         lda_model: tomotopy.LDAModel()
             Trained tomotopy LDA model
@@ -273,6 +276,8 @@ def lda_topic_outputter(lda_model, card_count=30, to_excel=False, fname='lda_out
 
 def hdp_topic_outputter(hdp_model, card_count=30, to_excel=False, fname='hdp_output.xlsx'):
     """
+    Given a trained tomotopy HDPModel(), outputs the top n = card_count cards for all topics
+        with the option to also output to Excel spreadsheet.
     Parameters:
         hdp_model: tomotopy.HDPModel()
             Trained tomotopy HDP model
@@ -299,8 +304,12 @@ def hdp_topic_outputter(hdp_model, card_count=30, to_excel=False, fname='hdp_out
 
 def hdp_deck_measure(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
     """
+    Given a tomotopy LDAModel(), generated from a trained tomotopy HDPModel(), and a list of decklists,
+        returns a DataFrame that shows how much each decklist aligns with each identified topic, with
+        the option to also output to an Excel spreadsheet.
     Parameters:
-        lda: tomotopy LDA model THAT WAS GENERATED FROM A TRAINED HDP MODEL USING hdp.convert_to_lda()
+        lda: tomotopy.LDAModel() object
+            tomotopy LDA model THAT WAS GENERATED FROM A TRAINED HDP MODEL USING hdp.convert_to_lda()
         decklists: list of list of strings
             list of decks, each of which is a list of strings that represent card names in a given deck
         to_excel: boolean
@@ -351,6 +360,9 @@ def get_lda_topics(lda, top_n=30):
 
 def get_lda_word_topic_dist(lda, to_excel=False, fname='lda_topic_dist.xlsx'):
     """
+    Given a trained tomotopy LDAModel(), returns a DataFrame with a column for
+        each topic and a row for each card name that gives that card's likelihood
+        of appearing in a deck of that theme.
     Parameters:
         lda: tomotopy.LDAModel() object
             Trained tomotopy LDA model.
@@ -359,8 +371,8 @@ def get_lda_word_topic_dist(lda, to_excel=False, fname='lda_topic_dist.xlsx'):
         fname:
             If to_excel==True, filename of the resulting Excel spreadsheet.
     :return:
-        tdist: DataFrame
-            DataFrame with columns equal to the number of LDA topics, rows
+        DataFrame
+            DataFrame, with columns equal to the number of LDA topics and rows
             equal to the size of the LDA's used vocabulary, that gives each
             card's likelihood of being included in that topic.
     """
@@ -374,6 +386,8 @@ def get_lda_word_topic_dist(lda, to_excel=False, fname='lda_topic_dist.xlsx'):
 
 def deck_measurer(decklist, lda):
     """
+    Given a decklist and a trained tomotopy LDAModel(), returns the likelihood
+        that the given deck is associated with the model's topics.
     Parameters:
         decklist: list of str
             A single decklist represented as a list of card names (strings).
@@ -381,7 +395,8 @@ def deck_measurer(decklist, lda):
             A trained tomotopy LDA model.
     :return:
         measured_deck: ndarray
-            An array with length equal to the number of topics that shows how much the deck aligns with each topic.
+            An array with length equal to the number of topics that shows how
+                much the deck aligns with each topic.
     """
 
     return lda.infer(lda.make_doc(decklist))[0]
@@ -389,6 +404,8 @@ def deck_measurer(decklist, lda):
 
 def id_outlier(lda, decklist, wtopic='max'):
     """
+    Given a decklist and a trained tomotopy LDAModel(), returns the card in the
+        decklist that least belongs in the given topic(s).
     Parameters:
         lda: tomotopy.LDAModel() object
             Trained tomotopy LDAModel.
@@ -426,8 +443,9 @@ def id_outlier(lda, decklist, wtopic='max'):
     return outlier
 
 
-def outlier_remover(decklist, card):
+def card_remover(decklist, card):
     """
+    Given a decklist and a card name, returns the decklist with the card removed.
     Parameters:
         decklist: list of str
             A decklist represented by a list of strings of card names.
@@ -435,13 +453,16 @@ def outlier_remover(decklist, card):
             The card to be removed from the decklist
     :return:
         list of str
-            Returns the same decklist, minus the card that was removed, as a list of strings
+            Returns the same decklist, minus the card that was removed, as a list
+                of strings
     """
     return [x for x in decklist if x != card]
 
 
 def id_missing_common(lda, decklist, wtopic='max'):
     """
+    Given a decklist and a trained tomotopy LDAModel(), returns the most-included
+        card in a given topic or topics that isn't in the supplied decklist.
     Parameters:
         lda: tomotopy.LDAModel() object
             Trained tomotopy LDAModel.
@@ -490,8 +511,9 @@ def id_missing_common(lda, decklist, wtopic='max'):
     return missing
 
 
-def missing_adder(decklist,card):
+def card_adder(decklist, card):
     """
+    Given a decklist and a card name, returns the decklist with the supplied card added in.
     Parameters:
         decklist: list of str
             Decklist represented by a list of strings of card names.
