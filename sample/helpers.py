@@ -302,16 +302,16 @@ def hdp_topic_outputter(hdp_model, card_count=30, to_excel=False, fname='hdp_out
 
 def decks_measurer(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
     """
-    Given a tomotopy LDAModel(), generated from a trained tomotopy HDPModel(), and a list of decklists,
-        returns a DataFrame that shows how much each decklist aligns with each identified topic, with
-        the option to also output to an Excel spreadsheet.
+    Given a tomotopy LDAModel() and a list of decklists,creturns a DataFrame that
+        shows how much each decklist aligns with each identified topic, with the
+        option to also output to an Excel spreadsheet.
     Parameters:
         lda: tomotopy.LDAModel() object or tomotopy.HDPModel() object
             A trained tomotopy LDAModel() object or a trained tomotopy HDPModel() object. If an
             HDPModel() object is passed in, an LDAModel() object will be generated from the
             HDPModel().convert_to_lda() method.
-        decklists: list of list of strings
-            list of decks, each of which is a list of strings that represent card names in a given deck
+        decklists: pd.DataFrame()
+            Pandas DataFrame of decks, with columns as card names and rows as decks
         to_excel: boolean
             Whether or not to output the DataFrame to an Excel spreadsheet
         fname: str ending in ".xlsx"
@@ -320,11 +320,14 @@ def decks_measurer(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
         DataFrame with a column for each identified topic and a row for each deck where each cell is
             the "amount" that that deck is associated with that topic.
     """
-    if type(lda) == tp.HDPModel()
-        lda_model = lda.convert_to_lda()
+    if type(lda) == tp.HDPModel:
+        lda_model = lda.convert_to_lda()[0]
+    else:
+        lda_model = lda
     new_docs = []
-    for decklist in decklists:
-        infer = [decklist[0], lda[0].infer(lda[0].make_doc(decklist[1:]))[0]]
+    for decklist in decklists.index:
+        deck = list(decklists.loc[decklist][decklists.loc[decklist]!=str(0)][1:].index)
+        infer = [decklists.loc[decklist][0], lda_model.infer(lda_model.make_doc(deck))[0]]
         new_docs.append(infer)
     df = pd.DataFrame(data=[item[1] for item in new_docs], index=[item[0] for item in new_docs])
     if to_excel:
