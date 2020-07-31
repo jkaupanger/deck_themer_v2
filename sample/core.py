@@ -4,7 +4,6 @@ aminatou_corpus = corpus_maker('C:\\Users\\Jamesson\\Documents\\GitHub\\deck_the
 
 lda = create_lda(k=9, corpus=aminatou_corpus)
 
-hdp = create_hdp(initial_k=9,corpus=aminatou_corpus)
+hdp = create_hdp(initial_k=9, corpus=aminatou_corpus)
 
 print('Done')
-

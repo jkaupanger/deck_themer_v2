@@ -33,7 +33,7 @@ def corpus_maker(f_name):
                 for x in range(0, int(row[col])):
                     deck.append(card_names[col])
         corpus.append(deck)
-    df = pd.DataFrame(data=data,columns=card_names)
+    df = pd.DataFrame(data=data, columns=card_names)
     processed_corpus = tp.utils.Corpus()
     for decklist in corpus:
         processed_corpus.add_doc(decklist)
@@ -263,7 +263,7 @@ def lda_topic_outputter(lda_model, card_count=30, to_excel=False, fname='lda_out
             Weight - how prevalent a given card is in a given topic
     """
     topics = []
-    for topic in get_lda_topics(lda_model, top_n=card_count).keys(): # hdp_model.keys():
+    for topic in get_lda_topics(lda_model, top_n=card_count).keys():
         for card in get_lda_topics(lda_model, card_count)[topic]:
             topics.append([topic, card[0], card[1]])
     df = pd.DataFrame(data=topics, columns=['Topic Number', 'Card Name', 'Weight'])
@@ -291,7 +291,7 @@ def hdp_topic_outputter(hdp_model, card_count=30, to_excel=False, fname='hdp_out
             Weight - how prevalent a given card is in a given topic
     """
     topics = []
-    for topic in get_hdp_topics(hdp_model, top_n=card_count).keys(): # hdp_model.keys():
+    for topic in get_hdp_topics(hdp_model, top_n=card_count).keys():
         for card in get_hdp_topics(hdp_model, card_count)[topic]:
             topics.append([topic, card[0], card[1]])
     df = pd.DataFrame(data=topics, columns=['Topic Number', 'Card Name', 'Weight'])
@@ -302,7 +302,7 @@ def hdp_topic_outputter(hdp_model, card_count=30, to_excel=False, fname='hdp_out
 
 def decks_measurer(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
     """
-    Given a tomotopy LDAModel() and a list of decklists,creturns a DataFrame that
+    Given a tomotopy LDAModel() and a list of decklists, returns a DataFrame that
         shows how much each decklist aligns with each identified topic, with the
         option to also output to an Excel spreadsheet.
     Parameters:
@@ -326,7 +326,7 @@ def decks_measurer(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
         lda_model = lda
     new_docs = []
     for decklist in decklists.index:
-        deck = list(decklists.loc[decklist][decklists.loc[decklist]!=str(0)][1:].index)
+        deck = list(decklists.loc[decklist][decklists.loc[decklist] != str(0)][1:].index)
         infer = [decklists.loc[decklist][0], lda_model.infer(lda_model.make_doc(deck))[0]]
         new_docs.append(infer)
     df = pd.DataFrame(data=[item[1] for item in new_docs], index=[item[0] for item in new_docs])
@@ -336,7 +336,7 @@ def decks_measurer(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
 
 
 def get_lda_topics(lda, top_n=30):
-    '''Wrapper function to extract topics from trained tomotopy LDA model (adapted from
+    """Wrapper function to extract topics from trained tomotopy LDA model (adapted from
         @ecoronado's get_hdp_topics() method)
 
     ** Inputs **
@@ -345,12 +345,12 @@ def get_lda_topics(lda, top_n=30):
 
     ** Returns **
     topics: dict -> per topic, an array with top words and associated frequencies
-    '''
+    """
 
     # Get most important topics by # of times they were assigned (i.e. counts)
-    sorted_topics = [k for k, v in sorted(enumerate(lda.get_count_by_topics()), key=lambda x:x[1], reverse=True)]
+    sorted_topics = [k for k, v in sorted(enumerate(lda.get_count_by_topics()), key=lambda x: x[1], reverse=True)]
 
-    topics=dict()
+    topics = dict()
 
     # For topics found, extract only those that are still assigned
     for k in sorted_topics:
@@ -358,7 +358,7 @@ def get_lda_topics(lda, top_n=30):
         for word, prob in lda.get_topic_words(k, top_n=top_n):
             topic_wp.append((word, prob))
 
-        topics[k] = topic_wp # store topic word/frequency array
+        topics[k] = topic_wp  # store topic word/frequency array
 
     return topics
 
@@ -381,9 +381,9 @@ def get_lda_word_topic_dist(lda, to_excel=False, fname='lda_topic_dist.xlsx'):
             equal to the size of the LDA's used vocabulary, that gives each
             card's likelihood of being included in that topic.
     """
-    df = pd.DataFrame(data=(100*lda.get_topic_word_dist(0)), columns=[0], index=lda.used_vocabs)
+    df = pd.DataFrame(data=(100 * lda.get_topic_word_dist(0)), columns=[0], index=lda.used_vocabs)
     for topic in range(1, lda.k):
-        df[topic] = 100*lda.get_topic_word_dist(topic)
+        df[topic] = 100 * lda.get_topic_word_dist(topic)
     if to_excel:
         df.to_excel(fname, encoding="utf-8")
     return df
@@ -490,7 +490,7 @@ def id_missing_common(lda, decklist, wtopic='max'):
     deck_themes = deck_measurer(decklist, lda)
     if wtopic == 'all':
         missing = {}
-        for topic in range(0,lda.k):
+        for topic in range(0, lda.k):
             card_index = 0
             missing_card = 0
             while missing_card == 0:
@@ -596,7 +596,7 @@ def add_improvement(lda=None, decklist=None, card_name=None):
     """
     c_decklist = decklist.copy()
     missing = {}
-    for topic in range(0,lda.k):
+    for topic in range(0, lda.k):
         if card_name is None:
             missing[topic] = id_missing_common(lda=lda, decklist=c_decklist, wtopic=topic)
         else:
@@ -606,7 +606,7 @@ def add_improvement(lda=None, decklist=None, card_name=None):
             return None
     before_add = {}
     after_add = {}
-    for topic in range(0,lda.k):
+    for topic in range(0, lda.k):
         c_decklist_a = card_adder(decklist=c_decklist.copy(), card=missing[topic])
         before_add[topic] = deck_measurer(decklist=c_decklist, lda=lda)[topic]
         after_add[topic] = deck_measurer(decklist=c_decklist_a, lda=lda)[topic]
