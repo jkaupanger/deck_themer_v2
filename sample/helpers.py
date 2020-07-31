@@ -1,43 +1,43 @@
-import tomotopy as tp
+import csv
 import pandas as pd
+import tomotopy as tp
 from sample.model_funcs import *
-import gensim.corpora as corpora
-from gensim.models import CoherenceModel
 
 
-def corpus_maker(csv_file):
+def corpus_maker(f_name):
     """
-    Starts with a .csv file and outputs a tomotopy Corpus, a necessary input for both the LDA and the HDP models, as
-        well as a list of lists of strings.
+    Takes a csv file and creates a set of decklists in list of lists,
+        DataFrame, and tomotopy Corpus objects.
     Parameters:
-        csv_file: file that holds the decklists. .csv file needs to be in the following format:
-            Columns = card names
-            Rows = decks
-            Cells = number of card (column) included in deck (row), which, other than basic lands and
-                other cards that an EDH can have more than one copy of, will either be a 0 or a 1.
+        f_name: .csv file
+            Term-document matrix: columns are card names, rows are decks,
+                and each cell is the count of the given card in the given deck.
     :return:
-        decklists: list of lists of strings
-            Each deck as a list of card names included (strings)
-        corpus: tomtoopy.utils.Corpus() object
-            Returns a tomotopy corpus object
-
+        corpus: list of list of str
+            All decklists represented as list of lists of strings
+        processed_corpus: tomotopy.Corpus() object
+            Decklist corpus in tomotopy Corpus format.
+        df: pandas.DataFrame() object
+            DataFrame version of the corpus object.
     """
-    df = pd.read_csv(csv_file, header=0, index_col=0, encoding='utf-8')
-    decklists = []
-    for deck in df.iloc:
-        decklist = []
-        for card in deck.index:
-            if deck[card] == 0:
-                pass
-            else:
-                for x in range(0, deck[card]):
-                    decklist.append(card)
-        decklists.append(decklist)
-
-    corpus = tp.utils.Corpus()
-    for decklist in decklists:
-        corpus.add_doc(decklist)
-    return decklists, corpus
+    with open(file=f_name, encoding='utf-8', mode='r') as f:
+        reader = csv.reader(f)
+        card_names = next(reader)
+        card_names[0] = 'Deck Numbers'
+        data = list(list(deck) for deck in csv.reader(f, delimiter=','))
+    corpus = []
+    for row in data:
+        deck = []
+        for col in range(1, len(card_names)):
+            if int(col) >= 1:
+                for x in range(0, int(row[col])):
+                    deck.append(card_names[col])
+        corpus.append(deck)
+    df = pd.DataFrame(data=data,columns=card_names)
+    processed_corpus = tp.utils.Corpus()
+    for decklist in corpus:
+        processed_corpus.add_doc(decklist)
+    return corpus, processed_corpus, df
 
 
 def create_lda(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.1, eta=1, seed=101, corpus=None):
@@ -72,7 +72,6 @@ def create_lda(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, k=2, alpha=0.
         corpus: tomotopy Corpus
             A list of documents to be added into the model. If None, documents have to be added
             after the model is created through LDAModel.add_doc() before the model can be trained.
-
     :return:
         tomotopy LDA model object
     """
@@ -139,7 +138,6 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                       eta_s=1, gamma_0=0, gamma_f=1, gamma_s=1, seed=101, corpus=None, burn=100,
                       train=1001, word_list=None, card_count=30):
     """
-
     Method to automatically iterate through different HDP parameters to compare results
     Parameters
         tw: Union[int, TermWeight]
@@ -155,7 +153,7 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
         min_df_0: int
             Starting minimum deck collection frequency
         min_df_f: int
-            Ending miniumum deck collection frequency
+            Ending minimum deck collection frequency
         min_df_s: int
             Minimum deck collection frequency step size
         rm_top_0: int
@@ -202,7 +200,7 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
         card_count: int
             Number of cards used to evaluate card coherence.
     :return:
-        Dataframe that lists the results of the preceding iterations. Contains the following columns:
+        DataFrame that lists the results of the preceding iterations. Contains the following columns:
             k - number of topics (not all of which are live; not sure why this is relevant)
             Live k - number of topics that are actually viable
             Avg. LL - Average log likelihood per word (not really sure what this means,
@@ -302,14 +300,16 @@ def hdp_topic_outputter(hdp_model, card_count=30, to_excel=False, fname='hdp_out
     return df
 
 
-def hdp_deck_measure(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
+def decks_measurer(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
     """
     Given a tomotopy LDAModel(), generated from a trained tomotopy HDPModel(), and a list of decklists,
         returns a DataFrame that shows how much each decklist aligns with each identified topic, with
         the option to also output to an Excel spreadsheet.
     Parameters:
-        lda: tomotopy.LDAModel() object
-            tomotopy LDA model THAT WAS GENERATED FROM A TRAINED HDP MODEL USING hdp.convert_to_lda()
+        lda: tomotopy.LDAModel() object or tomotopy.HDPModel() object
+            A trained tomotopy LDAModel() object or a trained tomotopy HDPModel() object. If an
+            HDPModel() object is passed in, an LDAModel() object will be generated from the
+            HDPModel().convert_to_lda() method.
         decklists: list of list of strings
             list of decks, each of which is a list of strings that represent card names in a given deck
         to_excel: boolean
@@ -320,6 +320,8 @@ def hdp_deck_measure(lda, decklists, to_excel=False, fname="decks_infer.xlsx"):
         DataFrame with a column for each identified topic and a row for each deck where each cell is
             the "amount" that that deck is associated with that topic.
     """
+    if type(lda) == tp.HDPModel()
+        lda_model = lda.convert_to_lda()
     new_docs = []
     for decklist in decklists:
         infer = [decklist[0], lda[0].infer(lda[0].make_doc(decklist[1:]))[0]]
@@ -428,7 +430,7 @@ def id_outlier(lda, decklist, wtopic='max'):
     deck_themes = deck_measurer(decklist, lda)
     if wtopic == 'all':
         outliers = {}
-        for topic in range(0,lda.k):
+        for topic in range(0, lda.k):
             card_weights = word_topic_dist[topic][word_topic_dist[topic].index.isin(decklist)].sort_values()
             outliers[topic] = card_weights.index[0]
         return outliers
@@ -526,3 +528,83 @@ def card_adder(decklist, card):
     new_decklist = decklist.copy()
     new_decklist.append(card)
     return new_decklist
+
+
+def remove_improvement(lda=None, decklist=None, card_name=None):
+    """
+    Given a decklist, shows the deck's theme breakdown by theme before and after
+        a specific card is removed. If no card name is provided, least common
+        card for given theme is removed.
+    Parameters
+        lda: tomotopy.LDAModel() object
+            Trained tomotopy LDAModel object.
+        decklist: list of str
+            A decklist, represented by a list of strings of card names.
+        card_name: str or None
+            Name of card to remove. If not provided, the least common card for
+                each theme that is in the deck is used.
+    :return:
+        before_remove: ndarray
+            Array of length lda.k + 1 that shows the given decklist's
+                alignments with each topic.
+        after_remove: ndarray
+            Array of length lda.k + 1 that shows the given decklist's
+                alignments with each topic after a specific card has been removed.
+    """
+    c_decklist = decklist.copy()
+    outliers = {}
+    for topic in range(0, lda.k):
+        if card_name is None:
+            outliers[topic] = id_outlier(lda=lda, decklist=c_decklist, wtopic=topic)
+        else:
+            outliers[topic] = card_name
+        if outliers[0] not in c_decklist:
+            print('Error: ' + outliers[0] + ' is not in provided decklist.')
+            return None
+    before_remove = {}
+    after_remove = {}
+    for topic in range(0, lda.k):
+        c_decklist_r = card_remover(decklist=c_decklist.copy(), card=outliers[topic])
+        before_remove[topic] = deck_measurer(decklist=c_decklist, lda=lda)[topic]
+        after_remove[topic] = deck_measurer(decklist=c_decklist_r, lda=lda)[topic]
+    return before_remove, after_remove
+
+
+def add_improvement(lda=None, decklist=None, card_name=None):
+    """
+    Given a decklist, shows the deck's theme breakdown by theme before and after
+        a specific card is added. If no card name is provided, most common card
+        for a given theme that isn't already in the deck is added.
+    Parameters
+        lda: tomotopy.LDAModel() object
+            Trained tomotopy LDAModel object.
+        decklist: list of str
+            A decklist, represented by a list of strings of card names.
+        card_name: str or None
+            Name of card to add. If not provided, the most common card for
+            that theme that isn't already in the deck is used.
+    :return:
+        before_add: ndarray
+            Array of length lda.k + 1 that shows the given decklist's
+                alignments with each topic.
+        after_add: ndarray
+            Array of length lda.k + 1 that shows the given decklist's
+                alignments with each topic after a specific card has been added.
+    """
+    c_decklist = decklist.copy()
+    missing = {}
+    for topic in range(0,lda.k):
+        if card_name is None:
+            missing[topic] = id_missing_common(lda=lda, decklist=c_decklist, wtopic=topic)
+        else:
+            missing[topic] = card_name
+        if missing[0] in c_decklist:
+            print('Error: ' + missing[0] + ' is already in provided decklist.')
+            return None
+    before_add = {}
+    after_add = {}
+    for topic in range(0,lda.k):
+        c_decklist_a = card_adder(decklist=c_decklist.copy(), card=missing[topic])
+        before_add[topic] = deck_measurer(decklist=c_decklist, lda=lda)[topic]
+        after_add[topic] = deck_measurer(decklist=c_decklist_a, lda=lda)[topic]
+    return before_add, after_add

@@ -1,25 +1,13 @@
-# -*- coding: utf-8 -*-
-
-# Learn more: https://github.com/kennethreitz/setup.py
-
-from setuptools import setup, find_packages
-
-
-with open('README.rst') as f:
-    readme = f.read()
-
-with open('LICENSE') as f:
-    license = f.read()
+from setuptools import setup
 
 setup(
-    name='sample',
-    version='0.1.0',
-    description='Sample package for Python-Guide.org',
-    long_description=readme,
-    author='Kenneth Reitz',
-    author_email='me@kennethreitz.com',
-    url='https://github.com/kennethreitz/samplemod',
-    license=license,
-    packages=find_packages(exclude=('tests', 'docs'))
+    name='deck_themer_v2',
+    version='',
+    packages=['tests', 'sample'],
+    url='https://github.com/jkaupanger/deck_themer_v2',
+    license='MIT',
+    author='Jamesson Kaupanger',
+    author_email='commanderjackedh@gmail.com',
+    description='This package is used to automatically categorize Magic: the Gathering EDH/Commander decklists by '
+                'theme. '
 )
-
