@@ -9,3 +9,5 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 Please make sure to update tests as appropriate.
 
 2020-07-29: Initial code commit. None of this code is tested as of yet; it's my first attempt at converting my Jupyter notebook into "proper" Python code.
+
+2020-07-31: Making methods' docstrings better.
