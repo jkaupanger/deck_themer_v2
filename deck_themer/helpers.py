@@ -142,7 +142,7 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                       eta_s=1, seed=101, corpus=None, burn=100,
                       train=1001, word_list=None, card_count=30, to_excel=False, fname='param_checking.xlsx'):
     """
-    Method to automatically iterate through different HDP parameters to compare results
+    Method to automatically iterate through different LDA parameters to compare results
     Parameters
         tw: Union[int, TermWeight]
             term weighting scheme in https://bab2min.github.io/tomotopy/v0.8.0/en/#tomotopy.TermWeight ;
@@ -166,12 +166,12 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             Ending number of top cards to exclude
         rm_top_s: int
             Top cards to exclude step size
-        k0_0: int
-            Starting number of initial topics
-        k0_f: int
-            Ending number of initial topics
-        k0_s: int
-            Number of initial topics step size
+        k_0: int
+            Starting number of topics
+        k_f: int
+            Ending number of topics
+        k_s: int
+            Number of topics to increase by per iteration
         alpha_0: int
             Starting number for the alpha hyperparameter as a power of ten, i.e. alpha = 10^(alpha_0)
         alpha_f: int
@@ -184,17 +184,11 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             Ending number for the eta hyperparameter as a power of ten, i.e. eta = 10^(eta_f)
         eta_s: int
             Step size for the powers of ten of the eta hyperparameter
-        gamma_0: int
-            Starting number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_0)
-        gamma_f: int
-            Ending number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_f)
-        gamma_s: int
-            Step size for the powers of ten of the gamma hyperparameter
         seed: int
             Random seed. Set to 101 as default in an attempt to duplicate results; however, said
             duplication has proven to be... elusive.
         corpus: tomotopy Corpus
-            A list of documents to be added into the model. Method will not function without model.
+            A list of documents to be added into the model. Method will not function without corpus.
         burn: int
             Number of initial training iterations to discard the results of?
         train: int
@@ -209,8 +203,7 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             If to_excel == True, filename of the resulting Excel spreadsheet.
     :return:
         DataFrame that lists the results of the preceding iterations. Contains the following columns:
-            k - number of topics (not all of which are live; not sure why this is relevant)
-            Live k - number of topics that are actually viable
+            k - number of topics
             Avg. LL - Average log likelihood per word (not really sure what this means,
                 but I think that lower is better)
             LL Std. Dev. - Log Likelihood standard deviation
@@ -218,11 +211,12 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             Perplexity - Perplexity of the model (don't know what this means,
                 but pretty sure that lower is better
             Coherence - (C_V) Coherence of the model. Shooting for ... 0.65? Or between
-                0.7 and 0.8? I'm honestly not sure
+                0.7 and 0.8? I'm honestly not sure. I think that you'll get better
+                results shooting for the latter.
     """
 
-    results_lists = [['tw', 'Min. f_collect', 'Min. f_doc', 'Top n Terms Removed', 'Initial k',
-                      'alpha', 'eta', 'gamma', 'k', 'Live k', 'Avg. LL', 'LL Std. Dev.', 'LL CV',
+    results_lists = [['tw', 'Min. f_collect', 'Min. f_doc', 'Top n Terms Removed',
+                      'alpha', 'eta', 'k', 'Avg. LL', 'LL Std. Dev.', 'LL CV',
                       'Perplexity', 'Coherence']]
     for cf in range(min_cf_0, min_cf_f, min_cf_s):
         print("Collection Frequency = " + str(cf))
@@ -230,32 +224,32 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             print("Document Frequency = " + str(df))
             for rm in range(rm_top_0, rm_top_f, rm_top_s):
                 print("Remove Top " + str(rm) + " Words")
-                for k in range(k0_0, k0_f, k0_s):
+                for k in range(k_0, k_f, k_s):
                     print(str(k) + " Initial Topics")
                     for a in range(alpha_0, alpha_f, alpha_s):
                         print("alpha = " + str(10**a))
                         for e in range(eta_0, eta_f, eta_s):
                             print("eta = " + str(10**e))
-                            for g in range(gamma_0, gamma_f, gamma_s):
-                                print("gamma = " + str(10**g))
-                                ll_list = []
-                                hdp = tp.HDPModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, initial_k=k,
-                                                  alpha=10**a, eta=10**e, gamma=10**g, seed=seed, corpus=corpus)
-                                hdp.burn_in = burn
-                                hdp.train(0)
-                                for i in range(0, train, 100):
-                                    hdp.train(100)
-                                    ll_list.append(hdp.ll_per_word)
-                                hdp_mean = sum(ll_list) / len(ll_list)
-                                hdp_variance = sum([((x - hdp_mean) ** 2) for x in ll_list]) / len(ll_list)
-                                hdp_std_dev = hdp_variance ** 0.5
-                                hdp_cv = hdp_std_dev / hdp_mean
-                                hdp_topics = get_hdp_topics(hdp, card_count)
-                                hdp_coh = eval_coherence(hdp_topics, word_list=word_list)
-                                results_list = [str(tw), cf, df, rm, k, 10**a, 10**e, 10**g, hdp.k,
-                                                hdp.live_k, hdp_mean, hdp_std_dev, hdp_cv,
-                                                hdp.perplexity, hdp_coh]
-                                results_lists.append(results_list)
+                            ll_list = []
+                            lda = tp.LDAModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, k=k,
+                                              alpha=10**a, eta=10**e, seed=seed, corpus=corpus)
+                            lda.burn_in = burn
+                            lda.train(0)
+                            for i in range(0, train, 100):
+                                lda.train(100)
+                                ll_list.append(lda.ll_per_word)
+                            lda_mean = sum(ll_list) / len(ll_list)
+                            lda_variance = sum([((x - lda_mean) ** 2) for x in ll_list]) / len(ll_list)
+                            lda_std_dev = lda_variance ** 0.5
+                            lda_cv = lda_std_dev / lda_mean
+                            # I believe that the following method can be used even though it was designed for HDP
+                            lda_topics = get_hdp_topics(lda, card_count)
+                            # I believe that the following method can be used even though it was designed for HDP
+                            lda_coh = eval_coherence(lda_topics, word_list=word_list)
+                            results_list = [str(tw), cf, df, rm, k, 10**a, 10**e, lda.k,
+                                            lda_mean, lda_std_dev, lda_cv,
+                                            lda.perplexity, lda_coh]
+                            results_lists.append(results_list)
     df = pd.DataFrame(data=results_lists[1:], columns=results_lists[0])
     if to_excel:
         df.to_excel(fname, encoding='utf-8')
