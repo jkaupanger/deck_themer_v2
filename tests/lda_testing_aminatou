@@ -1,7 +1,9 @@
-from sample.helpers import *
+from deck_themer.helpers import *
 
 aminatou_decklists, aminatou_corpus = corpus_maker(
-    'C:\\Users\\Jamesson\\Documents\\GitHub\\deck_themer_v2\\CSV_files\\aminatou_tdm.csv')  # Deck files are somewhat proprietary, so this field has been left blank.
+    'C:\\Users\\Jamesson\\Documents\\GitHub\\deck_themer_v2\\CSV_files\\aminatou_tdm.csv')
+# Deck files are somewhat proprietary, so you'll have to make your own.
+
 
 aminatou_lda = create_lda(k=11, corpus=aminatou_corpus)
 

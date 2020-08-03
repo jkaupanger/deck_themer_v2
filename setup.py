@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='deck_themer_v2',
     version='',
-    packages=['tests', 'sample'],
+    packages=['tests', 'deck_themer'],
     url='https://github.com/jkaupanger/deck_themer_v2',
     license='MIT',
     author='Jamesson Kaupanger',

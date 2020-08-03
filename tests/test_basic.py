@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sample.helpers import *
+from deck_themer.helpers import *
 
 aminatou_decklists, aminatou_corpus = corpus_maker(
     '')  # Deck files are somewhat proprietary, so this field has been left blank.
