@@ -3,6 +3,10 @@ import pandas as pd
 import tomotopy as tp
 from deck_themer.model_funcs import *
 
+# Jack's note: Eduardo Coronado's (@ecoronado92 on Twitter, author of the model_funcs.py file
+# referenced above) assistance was invaluable, and I will be forever grateful for his patience,
+# his expertise, and his willingness to share both with me, a mostly unlearned pleb.
+
 
 def corpus_maker(f_name):
     """
@@ -132,11 +136,11 @@ def create_hdp(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, initial_k=2, 
     return hdp
 
 
-def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
-                      min_df_f=1, min_df_s=1, rm_top_0=0, rm_top_f=1, rm_top_s=1, k0_0=2,
-                      k0_f=12, k0_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
-                      eta_s=1, gamma_0=0, gamma_f=1, gamma_s=1, seed=101, corpus=None, burn=100,
-                      train=1001, word_list=None, card_count=30):
+def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
+                      min_df_f=1, min_df_s=1, rm_top_0=0, rm_top_f=1, rm_top_s=1, k_0=2,
+                      k_f=12, k_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
+                      eta_s=1, seed=101, corpus=None, burn=100,
+                      train=1001, word_list=None, card_count=30, to_excel=False, fname='param_checking.xlsx'):
     """
     Method to automatically iterate through different HDP parameters to compare results
     Parameters
@@ -149,7 +153,7 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
         min_cf_f: int
             Ending minimum card collection frequency
         min_cf_s: int
-            Minmum card collection frequency step size
+            Minimum card collection frequency step size
         min_df_0: int
             Starting minimum deck collection frequency
         min_df_f: int
@@ -199,6 +203,10 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             Collection of decklists with each card name represented as a string.
         card_count: int
             Number of cards used to evaluate card coherence.
+        to_excel: boolean
+            Output the resulting DataFrame to Excel spreadsheet?
+        fname: string ending in '.xlsx'
+            If to_excel == True, filename of the resulting Excel spreadsheet.
     :return:
         DataFrame that lists the results of the preceding iterations. Contains the following columns:
             k - number of topics (not all of which are live; not sure why this is relevant)
@@ -209,22 +217,30 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             LL CV - Log Likelihood coefficient of variance (Std. Dev./Average)
             Perplexity - Perplexity of the model (don't know what this means,
                 but pretty sure that lower is better
-            Coherence - (C_V) Coherence of the model. Shooting for between 0.7 and 0.8.
+            Coherence - (C_V) Coherence of the model. Shooting for ... 0.65? Or between
+                0.7 and 0.8? I'm honestly not sure
     """
 
     results_lists = [['tw', 'Min. f_collect', 'Min. f_doc', 'Top n Terms Removed', 'Initial k',
                       'alpha', 'eta', 'gamma', 'k', 'Live k', 'Avg. LL', 'LL Std. Dev.', 'LL CV',
                       'Perplexity', 'Coherence']]
     for cf in range(min_cf_0, min_cf_f, min_cf_s):
+        print("Collection Frequency = " + str(cf))
         for df in range(min_df_0, min_df_f, min_df_s):
+            print("Document Frequency = " + str(df))
             for rm in range(rm_top_0, rm_top_f, rm_top_s):
+                print("Remove Top " + str(rm) + " Words")
                 for k in range(k0_0, k0_f, k0_s):
+                    print(str(k) + " Initial Topics")
                     for a in range(alpha_0, alpha_f, alpha_s):
+                        print("alpha = " + str(10**a))
                         for e in range(eta_0, eta_f, eta_s):
+                            print("eta = " + str(10**e))
                             for g in range(gamma_0, gamma_f, gamma_s):
+                                print("gamma = " + str(10**g))
                                 ll_list = []
                                 hdp = tp.HDPModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, initial_k=k,
-                                                  alpha=a, eta=e, gamma=g, seed=seed, corpus=corpus)
+                                                  alpha=10**a, eta=10**e, gamma=10**g, seed=seed, corpus=corpus)
                                 hdp.burn_in = burn
                                 hdp.train(0)
                                 for i in range(0, train, 100):
@@ -236,11 +252,139 @@ def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                                 hdp_cv = hdp_std_dev / hdp_mean
                                 hdp_topics = get_hdp_topics(hdp, card_count)
                                 hdp_coh = eval_coherence(hdp_topics, word_list=word_list)
-                                results_list = [str(tw), cf, df, rm, k, a, e, g, hdp.k,
+                                results_list = [str(tw), cf, df, rm, k, 10**a, 10**e, 10**g, hdp.k,
                                                 hdp.live_k, hdp_mean, hdp_std_dev, hdp_cv,
                                                 hdp.perplexity, hdp_coh]
                                 results_lists.append(results_list)
     df = pd.DataFrame(data=results_lists[1:], columns=results_lists[0])
+    if to_excel:
+        df.to_excel(fname, encoding='utf-8')
+    return df
+
+
+def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
+                      min_df_f=1, min_df_s=1, rm_top_0=0, rm_top_f=1, rm_top_s=1, k0_0=2,
+                      k0_f=12, k0_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
+                      eta_s=1, gamma_0=0, gamma_f=1, gamma_s=1, seed=101, corpus=None, burn=100,
+                      train=1001, word_list=None, card_count=30, to_excel=False, fname='param_checking.xlsx'):
+    """
+    Method to automatically iterate through different HDP parameters to compare results
+    Parameters
+        tw: Union[int, TermWeight]
+            term weighting scheme in https://bab2min.github.io/tomotopy/v0.8.0/en/#tomotopy.TermWeight ;
+            I chose the default to be inverse document frequency, which means that cards that appear in
+            almost all decks are weighted lower than cards that appear in very few decks.
+        min_cf_0: int
+            Starting minimum card collection frequency
+        min_cf_f: int
+            Ending minimum card collection frequency
+        min_cf_s: int
+            Minimum card collection frequency step size
+        min_df_0: int
+            Starting minimum deck collection frequency
+        min_df_f: int
+            Ending minimum deck collection frequency
+        min_df_s: int
+            Minimum deck collection frequency step size
+        rm_top_0: int
+            Starting number of top cards to exclude
+        rm_top_f: int
+            Ending number of top cards to exclude
+        rm_top_s: int
+            Top cards to exclude step size
+        k0_0: int
+            Starting number of initial topics
+        k0_f: int
+            Ending number of initial topics
+        k0_s: int
+            Number of initial topics step size
+        alpha_0: int
+            Starting number for the alpha hyperparameter as a power of ten, i.e. alpha = 10^(alpha_0)
+        alpha_f: int
+            Ending number for the alpha hyperparameter as a power of ten, i.e. alpha = 10^(alpha_f)
+        alpha_s: int
+            Step size for the powers of ten of the alpha hyperparameter
+        eta_0: int
+            Starting number for the eta hyperparameter as a power of ten, i.e. eta = 10^(eta_0)
+        eta_f: int
+            Ending number for the eta hyperparameter as a power of ten, i.e. eta = 10^(eta_f)
+        eta_s: int
+            Step size for the powers of ten of the eta hyperparameter
+        gamma_0: int
+            Starting number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_0)
+        gamma_f: int
+            Ending number for the gamma hyperparameter as a power of ten, i.e. gamma = 10^(gamma_f)
+        gamma_s: int
+            Step size for the powers of ten of the gamma hyperparameter
+        seed: int
+            Random seed. Set to 101 as default in an attempt to duplicate results; however, said
+            duplication has proven to be... elusive.
+        corpus: tomotopy Corpus
+            A list of documents to be added into the model. Method will not function without model.
+        burn: int
+            Number of initial training iterations to discard the results of?
+        train: int
+            Number of iterations to train over
+        word_list: list of lists of strings
+            Collection of decklists with each card name represented as a string.
+        card_count: int
+            Number of cards used to evaluate card coherence.
+        to_excel: boolean
+            Output the resulting DataFrame to Excel spreadsheet?
+        fname: string ending in '.xlsx'
+            If to_excel == True, filename of the resulting Excel spreadsheet.
+    :return:
+        DataFrame that lists the results of the preceding iterations. Contains the following columns:
+            k - number of topics (not all of which are live; not sure why this is relevant)
+            Live k - number of topics that are actually viable
+            Avg. LL - Average log likelihood per word (not really sure what this means,
+                but I think that lower is better)
+            LL Std. Dev. - Log Likelihood standard deviation
+            LL CV - Log Likelihood coefficient of variance (Std. Dev./Average)
+            Perplexity - Perplexity of the model (don't know what this means,
+                but pretty sure that lower is better
+            Coherence - (C_V) Coherence of the model. Shooting for ... 0.65? Or between
+                0.7 and 0.8? I'm honestly not sure
+    """
+
+    results_lists = [['tw', 'Min. f_collect', 'Min. f_doc', 'Top n Terms Removed', 'Initial k',
+                      'alpha', 'eta', 'gamma', 'k', 'Live k', 'Avg. LL', 'LL Std. Dev.', 'LL CV',
+                      'Perplexity', 'Coherence']]
+    for cf in range(min_cf_0, min_cf_f, min_cf_s):
+        print("Collection Frequency = " + str(cf))
+        for df in range(min_df_0, min_df_f, min_df_s):
+            print("Document Frequency = " + str(df))
+            for rm in range(rm_top_0, rm_top_f, rm_top_s):
+                print("Remove Top " + str(rm) + " Words")
+                for k in range(k0_0, k0_f, k0_s):
+                    print(str(k) + " Initial Topics")
+                    for a in range(alpha_0, alpha_f, alpha_s):
+                        print("alpha = " + str(10**a))
+                        for e in range(eta_0, eta_f, eta_s):
+                            print("eta = " + str(10**e))
+                            for g in range(gamma_0, gamma_f, gamma_s):
+                                print("gamma = " + str(10**g))
+                                ll_list = []
+                                hdp = tp.HDPModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, initial_k=k,
+                                                  alpha=10**a, eta=10**e, gamma=10**g, seed=seed, corpus=corpus)
+                                hdp.burn_in = burn
+                                hdp.train(0)
+                                for i in range(0, train, 100):
+                                    hdp.train(100)
+                                    ll_list.append(hdp.ll_per_word)
+                                hdp_mean = sum(ll_list) / len(ll_list)
+                                hdp_variance = sum([((x - hdp_mean) ** 2) for x in ll_list]) / len(ll_list)
+                                hdp_std_dev = hdp_variance ** 0.5
+                                hdp_cv = hdp_std_dev / hdp_mean
+                                hdp_topics = get_hdp_topics(hdp, card_count)
+                                hdp_coh = eval_coherence(hdp_topics, word_list=word_list)
+                                results_list = [str(tw), cf, df, rm, k, 10**a, 10**e, 10**g, hdp.k,
+                                                hdp.live_k, hdp_mean, hdp_std_dev, hdp_cv,
+                                                hdp.perplexity, hdp_coh]
+                                results_lists.append(results_list)
+    df = pd.DataFrame(data=results_lists[1:], columns=results_lists[0])
+    if to_excel:
+        df.to_excel(fname, encoding='utf-8')
     return df
 
 
