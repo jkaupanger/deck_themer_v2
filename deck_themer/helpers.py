@@ -216,7 +216,7 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
     """
 
     results_lists = [['tw', 'Min. f_collect', 'Min. f_doc', 'Top n Terms Removed',
-                      'alpha', 'eta', 'k', 'Avg. LL', 'LL Std. Dev.', 'LL CV',
+                      'k', 'alpha', 'eta', 'Avg. LL', 'LL Std. Dev.', 'LL CV',
                       'Perplexity', 'Coherence']]
     for cf in range(min_cf_0, min_cf_f, min_cf_s):
         print("Collection Frequency = " + str(cf))
@@ -225,7 +225,7 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
             for rm in range(rm_top_0, rm_top_f, rm_top_s):
                 print("Remove Top " + str(rm) + " Words")
                 for k in range(k_0, k_f, k_s):
-                    print(str(k) + " Initial Topics")
+                    print(str(k) + " Topics")
                     for a in range(alpha_0, alpha_f, alpha_s):
                         print("alpha = " + str(10**a))
                         for e in range(eta_0, eta_f, eta_s):
@@ -243,10 +243,10 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                             lda_std_dev = lda_variance ** 0.5
                             lda_cv = lda_std_dev / lda_mean
                             # I believe that the following method can be used even though it was designed for HDP
-                            lda_topics = get_hdp_topics(lda, card_count)
+                            lda_topics = get_lda_topics(lda, card_count)
                             # I believe that the following method can be used even though it was designed for HDP
                             lda_coh = eval_coherence(lda_topics, word_list=word_list)
-                            results_list = [str(tw), cf, df, rm, k, 10**a, 10**e, lda.k,
+                            results_list = [str(tw), cf, df, rm, k, 10**a, 10**e,
                                             lda_mean, lda_std_dev, lda_cv,
                                             lda.perplexity, lda_coh]
                             results_lists.append(results_list)
