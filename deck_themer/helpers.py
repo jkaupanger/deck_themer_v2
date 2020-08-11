@@ -3,6 +3,7 @@ import pandas as pd
 import tomotopy as tp
 from deck_themer.model_funcs import *
 
+
 # Jack's note: Eduardo Coronado's (@ecoronado92 on Twitter, author of the model_funcs.py file
 # referenced above) assistance was invaluable, and I will be forever grateful for his patience,
 # his expertise, and his willingness to share both with me, a mostly unlearned pleb.
@@ -110,13 +111,13 @@ def create_hdp(tw=tp.TermWeight.IDF, min_cf=0, min_df=5, rm_top=0, initial_k=2, 
             is over. Perhaps a good place to start would be with how many themes have been currently
             identified for this commander already on EDHREC? The default value is 2.
         alpha: float
-            "concentration coeficient of Dirichlet Process for document-table". Increasing alpha ... Based
+            "concentration coe[f]ficient of Dirichlet Process for document-table". Increasing alpha ... Based
             on advice from Eduardo Coronado (@ecoronado92 on Twitter), default for alpha is set to 0.1.
         eta: float
             "hyperparameter of Dirichlet distribution for topic-word". Increasing eta ... Based on
             experimentation, default for eta is 1.
         gamma: float
-            "concentration coeficient of Dirichlet [p]rocess for table-topic". Sets the overall number
+            "concentration coef[f]icient of Dirichlet [p]rocess for table-topic". Sets the overall number
             of themes/archetypes that the decks can share. Increasing gamma increases the number of
             themes that can be identified. Based on advice from Eduardo Coronado (@ecoronado92 on
             Twitter), default for alpha is set to 1.
@@ -255,9 +256,10 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
                             results_list.extend(topic_coherences)
                             average_coh = eval_coherence(lda_topics, word_list)
                             average_coherences.append(average_coh)
-                            coh_variance = sum([((x - average_coh) ** 2) for x in topic_coherences]) / len(topic_coherences)
-                            coh_std_dev.append(coh_variance**2)
-                            coh_cv.append((coh_variance**2)/average_coh)
+                            coh_variance = sum([((x - average_coh) ** 2) for x in topic_coherences]) / len(
+                                topic_coherences)
+                            coh_std_dev.append(coh_variance ** 2)
+                            coh_cv.append((coh_variance ** 2) / average_coh)
                             results_lists.append(results_list)
     for num_top in range(0, lda.k):
         results_lists[0].append('Top ' + str(num_top) + ' Coherence')
@@ -270,7 +272,7 @@ def lda_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, 
     return df
 
 
-def hdp_param_checker2(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
+def hdp_param_checker(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1, min_df_0=0,
                       min_df_f=1, min_df_s=1, rm_top_0=0, rm_top_f=1, rm_top_s=1, k0_0=2,
                       k0_f=12, k0_s=3, alpha_0=-1, alpha_f=0, alpha_s=1, eta_0=0, eta_f=1,
                       eta_s=1, gamma_0=0, gamma_f=1, gamma_s=1, seed=101, corpus=None, burn=100,
@@ -361,6 +363,7 @@ def hdp_param_checker2(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1,
     average_coherences = []
     coh_std_dev = []
     coh_cv = []
+    max_live_top = 0
     for cf in range(min_cf_0, min_cf_f, min_cf_s):
         print("Collection Frequency = " + str(cf))
         for df in range(min_df_0, min_df_f, min_df_s):
@@ -370,14 +373,14 @@ def hdp_param_checker2(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1,
                 for k in range(k0_0, k0_f, k0_s):
                     print(str(k) + " Initial Topics")
                     for a in range(alpha_0, alpha_f, alpha_s):
-                        print("alpha = " + str(10**a))
+                        print("alpha = " + str(10 ** a))
                         for e in range(eta_0, eta_f, eta_s):
-                            print("eta = " + str(10**e))
+                            print("eta = " + str(10 ** e))
                             for g in range(gamma_0, gamma_f, gamma_s):
-                                print("gamma = " + str(10**g))
+                                print("gamma = " + str(10 ** g))
                                 ll_list = []
                                 hdp = tp.HDPModel(tw=tw, min_cf=cf, min_df=df, rm_top=rm, initial_k=k,
-                                                  alpha=10**a, eta=10**e, gamma=10**g, seed=seed, corpus=corpus)
+                                                  alpha=10 ** a, eta=10 ** e, gamma=10 ** g, seed=seed, corpus=corpus)
                                 hdp.burn_in = burn
                                 hdp.train(0)
                                 for i in range(0, train, 100):
@@ -388,19 +391,22 @@ def hdp_param_checker2(tw=tp.TermWeight.IDF, min_cf_0=0, min_cf_f=1, min_cf_s=1,
                                 hdp_std_dev = hdp_variance ** 0.5
                                 hdp_cv = hdp_std_dev / hdp_mean
                                 hdp_topics = get_hdp_topics(hdp, card_count)
-                                hdp_coh = eval_coherence(hdp_topics, word_list=word_list)
-                                results_list = [str(tw), cf, df, rm, k, 10**a, 10**e, 10**g, hdp.k,
+                                # hdp_coh = eval_coherence(hdp_topics, word_list=word_list)
+                                results_list = [str(tw), cf, df, rm, k, 10 ** a, 10 ** e, 10 ** g, hdp.k,
                                                 hdp.live_k, hdp_mean, hdp_std_dev, hdp_cv,
                                                 hdp.perplexity]
                                 topic_coherences = eval_coherence_by_topic(hdp, deck_lists=word_list)
                                 results_list.extend(topic_coherences)
                                 average_coh = eval_coherence(hdp_topics, word_list)
                                 average_coherences.append(average_coh)
-                                coh_variance = sum([((x - average_coh) ** 2) for x in topic_coherences]) / len(topic_coherences)
-                                coh_std_dev.append(coh_variance**2)
-                                coh_cv.append((coh_variance**2)/average_coh)
+                                coh_variance = sum([((x - average_coh) ** 2) for x in topic_coherences]) / len(
+                                    topic_coherences)
+                                coh_std_dev.append(coh_variance ** 2)
+                                coh_cv.append((coh_variance ** 2) / average_coh)
                                 results_lists.append(results_list)
-    for num_top in range(0, hdp.live_k):
+                                if hdp.live_k > max_live_top:
+                                    max_live_top = hdp.live_k
+    for num_top in range(0, max_live_top):
         results_lists[0].append('Top ' + str(num_top) + ' Coherence')
     df = pd.DataFrame(data=results_lists[1:], columns=results_lists[0])
     df['Average Coherence'] = average_coherences
@@ -815,7 +821,6 @@ def eval_coherence_by_topic(lda, deck_lists, card_count=30, coherence_type='c_v'
             topic_tokens.append(w)
 
         topic_dict.append(topic_tokens)
-
 
     # Build Coherence model
     cm = CoherenceModel(topics=topic_dict, corpus=corpus, dictionary=vocab, texts=deck_lists,
